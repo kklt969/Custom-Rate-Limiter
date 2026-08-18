@@ -1,0 +1,13 @@
+## before 2026-08-11
+
+- did: added TTL eviction to cache, tested under load
+- stuck: race condition when two threads evict same key
+- next: learn redis and integrate to the project
+_______________________________
+
+# 2026-08-14
+
+- Integrated redis to CacheService.
+-Unit Tested CacheService.
+
+_______________

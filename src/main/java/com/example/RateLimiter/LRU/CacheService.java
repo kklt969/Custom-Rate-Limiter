@@ -1,6 +1,7 @@
 package com.example.RateLimiter.LRU;
 
 
+import com.example.RateLimiter.Redis.RedisCacheService;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,27 +33,48 @@ finally
  ↓
 unlock()
 
+----
+                CacheService
+                     │
+             ┌───────┴───────┐
+             │               │
+         Redis GET       ReentrantLock
+             │               │
+             ↓               ↓
+         Cache HIT       Cache MISS
+                             │
+                             ↓
+                        Database
+                             │
+                             ↓
+                       Redis SET
+                         + TTL
+
  */
 
 @Service
 public class CacheService {
 
 
-    private final LRUCache cache;
+    //private final LRUCache cache;
 
     private final AtomicInteger databaseCalls= new AtomicInteger(0);
 
     private final ConcurrentHashMap<String, ReentrantLock> locks = new ConcurrentHashMap<>();
 
-    public CacheService() {
+    private final RedisCacheService redisCacheService;
 
-        cache = new LRUCache(100);
+    public CacheService(RedisCacheService redisCacheService) {
+        //this.cache = cache;
+        this.redisCacheService = redisCacheService;
     }
+
+    //public CacheService() {}
 
 
     public CacheResponse getData(String key)  {
 
-        String cachedData = cache.get(key);
+        String cachedData = redisCacheService.get(key);
 
 
         if(cachedData != null) {
@@ -66,12 +88,12 @@ public class CacheService {
 
 
         try {
-            cachedData = cache.get(key);
+            cachedData = redisCacheService.get(key);
 
             if(cachedData == null) {
 
                 String dbResult = fakeDataBaseCall(key);
-                cache.put(key,dbResult,30);
+                redisCacheService.set(key,dbResult,30);
                 return new CacheResponse(dbResult,false);
 
             }
@@ -83,7 +105,7 @@ public class CacheService {
 
     }
 
-    public String fakeDataBaseCall(String key)  {
+    private String fakeDataBaseCall(String key)  {
 
         try{
             Thread.sleep(200);

@@ -20,10 +20,10 @@ public class CacheController {
         return cacheService.getData(key);
     }
 
-    @GetMapping("/no-cache/{key}")
+    /*@GetMapping("/no-cache/{key}")
     public String getfakeDBData(@PathVariable String key) {
 
         return cacheService.fakeDataBaseCall(key);
 
-    }
+    }*/
 }

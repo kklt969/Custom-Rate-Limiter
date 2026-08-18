@@ -1,0 +1,46 @@
+# Benchmark Results
+
+## Redis Cloud — Warm Cache
+
+### Test setup
+
+- Requests: 100
+- Worker threads: 10
+- Cache keys: 5 (`user1` - `user5`)
+- TTL: 30 seconds
+- Database simulation: 200 ms delay
+- Cache: Redis Cloud
+- Measurement: End-to-end HTTP latency
+
+### Results
+
+| Metric | Result |
+|---|---:|
+| Requests | 100 |
+| Cache hits | 96 |
+| Cache misses | 4 |
+| Cache hit rate | 96% |
+| Minimum latency | 73.67 ms |
+| p50 latency | 75.81 ms |
+| p99 latency | 1581.20 ms |
+| Maximum latency | 1581.30 ms |
+
+### Observations
+
+Most requests were cache hits because the benchmark only used five keys.
+
+The median latency was about 76 ms, which is significantly higher than the local in-memory LRU cache benchmark (~4 ms).
+
+The main difference is that the local cache is inside the Java process, while Redis Cloud requires network communication:
+
+Spring Boot → Redis Cloud → Spring Boot
+
+The p99 latency was much higher than the p50. Most requests completed around 76 ms, but a small number of requests took over 1.5 seconds.
+
+### What I learned
+
+- A cache hit is not automatically fast if the cache is remote.
+- Network latency becomes part of the request latency when using Redis Cloud.
+- p99 can reveal slow requests that p50 hides.
+- Cache hit rate has a major effect on overall performance.
+- Benchmarking with concurrent requests can expose latency spikes that aren't obvious with a single request.

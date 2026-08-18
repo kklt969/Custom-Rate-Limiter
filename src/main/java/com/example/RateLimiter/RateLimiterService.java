@@ -19,7 +19,7 @@ public class RateLimiterService {
 
 
 
-    private int capacity = 101;
+    private int capacity = 102;
 
     private int refillRatePerSecond = 1;
 

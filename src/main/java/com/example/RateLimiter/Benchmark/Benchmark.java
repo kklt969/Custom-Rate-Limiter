@@ -39,9 +39,9 @@ public class Benchmark {
         List<Future<?>> futures = new ArrayList<>();
 
 
-        // Submit 100 HTTP requests.
-        for (int i = 0; i < 100; i++) {
-            String key = "user" + (i % 5 + 1);
+        // Submit ___ HTTP requests.
+        for (int i = 0; i < 50; i++) {
+            String key = "user" + 3;
             Future<?> future = executor.submit(() -> {
 
 

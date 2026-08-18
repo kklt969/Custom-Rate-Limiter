@@ -1,12 +1,16 @@
 package com.example.RateLimiter.LRU;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.concurrent.CountDownLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SpringBootTest
 public class CacheServiceTest {
 
     /*
@@ -22,13 +26,13 @@ per-key synchronized lock
    ↓
 1 DB call
    ↓
-19 cache hits
-     */
+19 cache hits*/
+    @Autowired
+    private CacheService cacheService;
 
     @Test
     public void twentyThreadCalls() throws InterruptedException {
 
-        CacheService cacheService = new CacheService();
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
 
@@ -43,7 +47,7 @@ per-key synchronized lock
                     throw new RuntimeException(e);
                 }
 
-                cacheService.getData("user1");
+                cacheService.getData("redis-concurrent-test");
 
 
             });
@@ -64,8 +68,9 @@ per-key synchronized lock
         assertEquals(1, cacheService.getDatabaseCalls());
 
     }
+}
 
-    @Test
+    /*@Test
     public void concurrentLRUTest() throws InterruptedException {
 
         LRUCache cache = new LRUCache(10);
@@ -119,4 +124,4 @@ per-key synchronized lock
     }
 
 
-}
+}*/
