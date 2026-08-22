@@ -1,65 +1,92 @@
-# Custom Rate Limiter & Cache
+# Custom Rate Limiter
 
-A Spring Boot project I built to learn how caching, concurrency, and rate limiting work under the hood.
+A Spring Boot project where I built a cache and rate limiter from scratch, then moved the system to Redis to handle concurrency and distributed state.
 
-Instead of starting with Redis or a caching library, I first built the cache myself and tested it with concurrent requests.
+## What I Built
 
-## Features
+- Custom LRU cache using HashMap + Doubly Linked List
+- TTL-based cache expiration
+- Thread-safe cache operations
+- Per-key ReentrantLock for cache stampede protection
+- Redis Cloud integration
+- Redis-backed caching
+- Redis Lua script for atomic token bucket rate limiting
+- HTTP 429 rate-limit responses
+- Concurrent tests with 50 threads
+- Basic latency benchmarking
 
-- LRU cache using a HashMap and doubly linked list
-- O(1) cache get and put
-- TTL-based expiration
-- Cache-aside pattern
-- Cache stampede protection
-- Per-key locking with ReentrantLock
-- Thread-safe LRU cache
-- Token Bucket rate limiter
-- Concurrent unit tests
-- HTTP latency benchmarking
-- p50 and p99 latency measurements
+## Architecture
+
+Client
+  ↓
+Spring Boot
+  ↓
+RateLimitInterceptor
+  ↓
+Redis Token Bucket
+  ↓
+Lua Script
+  ↓
+Redis Cloud
+
+The cache uses Redis for shared state, while the token bucket is executed atomically inside Redis using Lua.
 
 ## Concurrency
 
-One of the main things I wanted to understand was what happens when multiple requests ask for the same data at the same time.
+The cache was tested with 50 concurrent requests for the same missing key.
 
-I added per-key locking so that if 20 requests miss the same cache entry, only one request goes to the database while the others wait for the cache to be populated.
+Result:
 
-Example:
+- 50 requests
+- 1 database call
+- 49 cache hits
 
-20 requests
-     ↓
-same cache key
-     ↓
-1 database call
-     ↓
-cache populated
-     ↓
-19 cache hits
+The Redis rate limiter was also tested with 50 concurrent requests against the same key.
 
-I also made the LRU data structure thread-safe because get() and put() modify the underlying HashMap and doubly linked list.
+Result:
 
-## Benchmarking
+- 5 requests allowed
+- 45 requests rejected
 
-I added a small Java HTTP benchmark to measure request latency and cache performance.
+## Benchmark
 
-Example result:
+### Redis Cloud — Mostly Cache Hits
 
-Requests: 100
-Cache hits: 99
-Cache misses: 1
+100 requests using 5 keys:
 
-p50: ~4 ms
-p99: ~419 ms
+- Cache hit rate: 96%
+- p50: 75.81 ms
+- p99: 1581.20 ms
 
-The benchmarking helped me see the difference between normal cache latency and slower requests under concurrent load.
+### Redis Cloud — Mostly Cache Misses
+
+100 requests using 100 different keys:
+
+- Cache hit rate: 1%
+- p50: 420.77 ms
+- p99: 1355.56 ms
+
+The benchmarks measure end-to-end HTTP latency, including Spring Boot and network communication with Redis Cloud.
+
+## What I Learned
+
+- How LRU caching works internally
+- Race conditions and thread safety
+- synchronized vs ReentrantLock
+- Cache stampede prevention
+- Redis and TTL
+- Atomic Redis operations
+- Lua scripting
+- Distributed rate limiting
+- p50 vs p99 latency
+- Concurrent testing
 
 ## Tech Stack
 
 - Java
 - Spring Boot
-- Maven
+- Spring Data Redis
+- Redis Cloud
+- Lua
 - JUnit
-- Java HTTP Client
-- ConcurrentHashMap
-- ReentrantLock
-- CountDownLatch
+- Maven
