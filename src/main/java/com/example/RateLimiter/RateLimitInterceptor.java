@@ -1,5 +1,6 @@
 package com.example.RateLimiter;
 
+import com.example.RateLimiter.Redis.RedisRateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -7,9 +8,9 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 public class RateLimitInterceptor implements HandlerInterceptor {
 
-    private final RateLimiterService rateLimiterService;
+    private final RedisRateLimiterService rateLimiterService;
 
-    public RateLimitInterceptor(RateLimiterService rateLimiterService) {
+    public RateLimitInterceptor(RedisRateLimiterService rateLimiterService) {
         this.rateLimiterService = rateLimiterService;
     }
 
@@ -18,10 +19,37 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         String clientId = request.getHeader("X-API-Key");
 
+        if(clientId == null || clientId.isBlank()) {
 
-        if(!rateLimiterService.allowRequest(clientId)) {
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
+            response.setContentType("application/json");
+
+            response.getWriter().write("""
+                    
+                    {
+                           "error": "Bad Request",
+                            "message": "X-API-Key header is required."
+                    }
+                    
+                    """);
+
+            return false;
+        }
+
+        if(!rateLimiterService.allow(clientId)) {
+
+            response.setContentType("application/json");
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.getWriter().println("Retry after 1s");
+            response.setHeader("Retry-After", "1");
+
+            response.getWriter().write("""
+        {
+            "error": "Too Many Requests",
+            "message": "Rate limit exceeded. Try again later."
+        }
+        """);
+
+
         return false;
         }
         return true;

@@ -11,3 +11,9 @@ _______________________________
 -Unit Tested CacheService.
 
 _______________
+
+
+#2026- 08- 21
+
+-Added Redis distributed rate Limiter
+- Integrated and tested the whole application successfully.
