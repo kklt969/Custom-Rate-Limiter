@@ -1,21 +1,30 @@
 package com.example.RateLimiter;
 
+import com.example.RateLimiter.Dashboard.DashboardMetricsService;
 import com.example.RateLimiter.Redis.RedisRateLimiterService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 public class RateLimitInterceptor implements HandlerInterceptor {
 
     private final RedisRateLimiterService rateLimiterService;
 
-    public RateLimitInterceptor(RedisRateLimiterService rateLimiterService) {
+    private boolean rateLimitingEnabled = true;
+    private DashboardMetricsService dashboardMetricsService;
+
+    public RateLimitInterceptor(RedisRateLimiterService rateLimiterService, DashboardMetricsService dashboardMetricsService) {
         this.rateLimiterService = rateLimiterService;
+        this.dashboardMetricsService = dashboardMetricsService;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception{
+
 
         String clientId = request.getHeader("X-API-Key");
 
@@ -29,12 +38,16 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                     {
                            "error": "Bad Request",
                             "message": "X-API-Key header is required."
-                    }
+                    }c
                     
                     """);
 
             return false;
         }
+
+        dashboardMetricsService.recordRequest();
+
+
 
         if(!rateLimiterService.allow(clientId)) {
 
@@ -49,9 +62,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
         """);
 
+            dashboardMetricsService.recordRejectedRequest();
 
         return false;
         }
+
+        dashboardMetricsService.recordAllowedRequest();
         return true;
 
     }

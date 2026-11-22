@@ -15,6 +15,7 @@ public class RedisRateLimiterService {
 
     private final DefaultRedisScript<Long> redisScript;
 
+    private boolean enabled = false;
 
     public RedisRateLimiterService(StringRedisTemplate redisTemplate) {
 
@@ -29,6 +30,10 @@ public class RedisRateLimiterService {
 
     public boolean allow(String key){
 
+        if(!enabled){
+            return true;
+        }
+
         String redisKey = "rate_limit:" + key;
 
         long capacity = 5;
@@ -36,6 +41,7 @@ public class RedisRateLimiterService {
         double refillRate = 0.001; // 1 PER SECOND
 
         long currentTime = System.currentTimeMillis();
+
 
         Long result = redisTemplate.execute(
                 redisScript,

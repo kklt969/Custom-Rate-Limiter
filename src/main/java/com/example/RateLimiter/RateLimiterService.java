@@ -19,18 +19,24 @@ public class RateLimiterService {
 
 
 
-    private int capacity = 102;
+    private int capacity = 10000;
 
     private int refillRatePerSecond = 1;
 
 
+    private boolean enabled = false; // rate limiting switch
+
     public boolean allowRequest(String clientId) {
+        if (!enabled) {
+            return true;
+        }
 
-        TokenBucket bucket = buckets.computeIfAbsent(clientId,
-                key -> new TokenBucket(capacity, refillRatePerSecond));
+        TokenBucket bucket = buckets.computeIfAbsent(
+                clientId,
+                key -> new TokenBucket(capacity, refillRatePerSecond)
+        );
 
-      return bucket.tryConsume();
-
+        return bucket.tryConsume();
     }
 
 }

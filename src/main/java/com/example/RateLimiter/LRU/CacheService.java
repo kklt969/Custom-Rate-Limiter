@@ -1,6 +1,7 @@
 package com.example.RateLimiter.LRU;
 
 
+import com.example.RateLimiter.Dashboard.DashboardMetricsService;
 import com.example.RateLimiter.Redis.RedisCacheService;
 import org.springframework.stereotype.Service;
 
@@ -64,9 +65,12 @@ public class CacheService {
 
     private final RedisCacheService redisCacheService;
 
-    public CacheService(RedisCacheService redisCacheService) {
+    private DashboardMetricsService dashboardMetricsService;
+
+    public CacheService(RedisCacheService redisCacheService, DashboardMetricsService dashboardMetricsService) {
         //this.cache = cache;
         this.redisCacheService = redisCacheService;
+        this.dashboardMetricsService = dashboardMetricsService;
     }
 
     //public CacheService() {}
@@ -78,6 +82,7 @@ public class CacheService {
 
 
         if(cachedData != null) {
+            dashboardMetricsService.recordCacheHit();
             return new CacheResponse(cachedData,true);
         }
 
@@ -94,9 +99,11 @@ public class CacheService {
 
                 String dbResult = fakeDataBaseCall(key);
                 redisCacheService.set(key,dbResult,30);
+                dashboardMetricsService.recordCacheMiss();
                 return new CacheResponse(dbResult,false);
 
             }
+            dashboardMetricsService.recordCacheHit();
             return new CacheResponse(cachedData, true);
         }finally {
             lock.unlock();
